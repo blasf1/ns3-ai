@@ -100,12 +100,13 @@ def get_setting(setting_map):
 
 def build_ns3(path):
     print('build')
-    proc = subprocess.Popen('./waf build', shell=True, stdout=subprocess.PIPE,
-                            stderr=devnull, universal_newlines=True, cwd=path)
+    proc = subprocess.Popen('./ns3 build', shell=True, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE, universal_newlines=True, cwd=path)
     proc.wait()
     ok = False
+
     for line in proc.stdout:
-        if "'build' finished successfully" in line:
+        if "Finished executing the following commands:" in line and len(proc.stderr.read()) == 0:
             ok = True
             break
     return ok
@@ -116,15 +117,21 @@ def run_single_ns3(path, pname, setting=None, env=None, show_output=False, build
         return None
     if env:
         env.update(os.environ)
-    env['LD_LIBRARY_PATH'] = os.path.abspath(os.path.join(path, 'build', 'lib'))
+    env['LD_LIBRARY_PATH'] = os.path.abspath(
+        os.path.join(path, 'build', 'lib'))
+
     if not setting:
-        cmd = './{}'.format(pname)
+        cmd = './ns3 run {}'.format(pname)
     else:
-        cmd = './{}{}'.format(pname, get_setting(setting))
-    exec_path = os.path.join(path, 'build', 'scratch')
+        cmd = './ns3 run \"{}{}\"'.format(pname, get_setting(setting))
+
+    print(cmd)
+
+    exec_path = os.path.join(path)  # , 'build', 'scratch')
     if os.path.isdir(os.path.join(exec_path, pname)):
         exec_path = os.path.join(exec_path, pname)
     if show_output:
+        print(exec_path)
         proc = subprocess.Popen(
             cmd, shell=True, universal_newlines=True, cwd=exec_path, env=env)
     else:
@@ -144,7 +151,7 @@ def run_bulk_ns3(path, pname, commons, settings, debug=False):
         cpus = get_free_cpu()
         while len(cpus) < RESERVE_CPU:
             time.sleep(5)
-        cmd = 'taskset -c {} nohup ./waf --run {}{}{} > {}&'.format(
+        cmd = 'taskset -c {} nohup ./ns3 run {}{}{} > {}&'.format(
             cpus[0][0], pname, common_setting_param, args, fn)
         os.system(cmd)
 
