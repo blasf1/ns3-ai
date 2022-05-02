@@ -30,8 +30,8 @@ git clone https://github.com/hust-diangroup/ns3-ai.git
 
 #### Rebuild ns-3
 ```Shell
-./waf configure
-./waf
+./ns3 configure
+./ns3
 ```
 
 ### 2. Add Python interface
